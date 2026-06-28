@@ -4,10 +4,8 @@
     "slug": "brewhouse",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#1A0A00"
     },
@@ -17,13 +15,11 @@
       "bundleIdentifier": "com.brewhouse.app"
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#1A0A00"
-      },
       "package": "com.brewhouse.app",
-      "versionCode": 1
-    },
-    "plugins": ["expo-router"]
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#1A0A00"
+      }
+    }
   }
 }
