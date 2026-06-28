@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "BrewHouse",
-    "slug": "brewhouse",
+    "slug": "brewhouse-",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -19,7 +19,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "YOUR_PROJECT_ID_HERE"
+        "projectId": "b76e9925-1994-4bc4-864b-092c44d31ac3"
       }
     }
   }
