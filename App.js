@@ -10,7 +10,9 @@ import CartScreen from './src/screens/CartScreen';
 import TrackScreen from './src/screens/TrackScreen';
 import LoyaltyScreen from './src/screens/LoyaltyScreen';
 import FavouritesScreen from './src/screens/FavouritesScreen';
+import AdminOrdersScreen from './src/screens/AdminOrdersScreen';
 import { CartProvider, useCart } from './src/data/CartContext';
+import { AuthProvider } from './src/data/AuthContext';
 
 const Tab = createBottomTabNavigator();
 const MenuStack = createStackNavigator();
@@ -38,6 +40,7 @@ function TabIcon({ name, focused }) {
     Track: '🕐',
     Rewards: '⭐',
     Saved: '❤️',
+    Admin: '🧾',
   };
   return (
     <React.Fragment>
@@ -88,6 +91,11 @@ function AppNavigator() {
         component={FavouritesScreen}
         options={{ tabBarIcon: ({ color }) => <TabText color={color}>❤️</TabText> }}
       />
+      <Tab.Screen
+        name="Admin"
+        component={AdminOrdersScreen}
+        options={{ tabBarIcon: ({ color }) => <TabText color={color}>🧾</TabText> }}
+      />
     </Tab.Navigator>
   );
 }
@@ -100,12 +108,14 @@ function TabText({ color, children }) {
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
       <CartProvider>
         <NavigationContainer>
           <StatusBar style="light" />
           <AppNavigator />
         </NavigationContainer>
       </CartProvider>
+      </AuthProvider>
     </GestureHandlerRootView>
   );
 }
