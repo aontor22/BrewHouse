@@ -18,7 +18,7 @@ export default function CartScreen({ navigation }) {
     if (submitting) return;
     try {
       setSubmitting(true);
-      await placeOrder({ items: cartItems, subtotal: totalPrice, customerId: user?.uid || 'guest' });
+      await placeOrder({ items: cartItems, subtotal: totalPrice, customerId: user?.id || user?.uid || 'guest' });
       setOrdered(true);
       clearCart();
       setTimeout(() => navigation.navigate('Track'), 1200);

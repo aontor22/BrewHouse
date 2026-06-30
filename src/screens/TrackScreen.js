@@ -48,8 +48,8 @@ export default function TrackScreen() {
   const [orders, setOrders] = useState([]);
 
   useEffect(() => {
-    return subscribeToCustomerOrders(user?.uid || 'guest', setOrders);
-  }, [user?.uid]);
+    return subscribeToCustomerOrders(user?.id || user?.uid || 'guest', setOrders);
+  }, [user?.id, user?.uid]);
 
   const activeOrders = orders.filter(order => ACTIVE.includes(order.status));
   const pastOrders = orders.filter(order => !ACTIVE.includes(order.status));

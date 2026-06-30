@@ -9,7 +9,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#1A0A00"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "android": {
       "package": "com.brewhouse.app",
       "versionCode": 1,
@@ -21,6 +23,15 @@
       "eas": {
         "projectId": "b76e9925-1994-4bc4-864b-092c44d31ac3"
       }
-    }
+    },
+    "plugins": [
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.brewhouse",
+          "enableGooglePay": true
+        }
+      ]
+    ]
   }
 }
