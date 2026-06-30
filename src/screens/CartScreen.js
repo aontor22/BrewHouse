@@ -5,17 +5,27 @@ import {
 } from 'react-native';
 import { COLORS } from '../data/constants';
 import { useCart } from '../data/CartContext';
+import { useAuth } from '../data/AuthContext';
+import { placeOrder } from '../services/orderService';
 
 export default function CartScreen({ navigation }) {
   const { cartItems, addItem, removeItem, clearCart, totalItems, totalPrice } = useCart();
+  const { user } = useAuth();
   const [ordered, setOrdered] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleOrder = () => {
-    setOrdered(true);
-    clearCart();
-    setTimeout(() => {
-      navigation.navigate('Track');
-    }, 2000);
+  const handleOrder = async () => {
+    if (submitting) return;
+    try {
+      setSubmitting(true);
+      await placeOrder({ items: cartItems, subtotal: totalPrice, customerId: user?.uid || 'guest' });
+      setOrdered(true);
+      clearCart();
+      setTimeout(() => navigation.navigate('Track'), 1200);
+    } catch (error) {
+      Alert.alert('Order failed', 'Please check your connection and try again.');
+      setSubmitting(false);
+    }
   };
 
   if (ordered) {
@@ -98,7 +108,7 @@ export default function CartScreen({ navigation }) {
 
       <View style={styles.footer}>
         <TouchableOpacity style={styles.orderBtn} onPress={handleOrder}>
-          <Text style={styles.orderBtnText}>Place order · ${(totalPrice * 1.08).toFixed(2)}</Text>
+          <Text style={styles.orderBtnText}>{submitting ? 'Placing order…' : `Place order · $${(totalPrice * 1.08).toFixed(2)}`}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
