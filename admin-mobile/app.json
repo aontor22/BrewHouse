@@ -6,12 +6,23 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
-    "splash": { "resizeMode": "contain", "backgroundColor": "#1A0A00" },
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#1A0A00"
+    },
     "assetBundlePatterns": ["**/*"],
     "android": {
       "package": "com.brewhouse.admin",
       "versionCode": 1,
-      "adaptiveIcon": { "foregroundImage": "./assets/icon.png", "backgroundColor": "#1A0A00" }
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#1A0A00"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "56c0b528-a64a-420e-ac78-1797d85b7000"
+      }
     }
   }
 }
