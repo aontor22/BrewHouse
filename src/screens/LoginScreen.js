@@ -78,8 +78,8 @@ export default function LoginScreen() {
             <TouchableOpacity style={[styles.modeBtn, mode === 'email' && styles.modeBtnActive]} onPress={() => setMode('email')}>
               <Text style={[styles.modeText, mode === 'email' && styles.modeTextActive]}>Email</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.modeBtn, mode === 'phone' && styles.modeBtnActive]} onPress={() => setMode('phone')}>
-              <Text style={[styles.modeText, mode === 'phone' && styles.modeTextActive]}>Phone</Text>
+            <TouchableOpacity style={[styles.modeBtn, styles.modeBtnDisabled]} onPress={() => Alert.alert('Phone login disabled', 'SMS login is not enabled for this app yet. Please use email login.')}>
+              <Text style={styles.modeText}>Phone</Text>
             </TouchableOpacity>
           </View>
 
@@ -184,6 +184,7 @@ const styles = StyleSheet.create({
   modeRow: { flexDirection: 'row', backgroundColor: '#2a1500', borderRadius: 12, padding: 4, marginBottom: 20 },
   modeBtn: { flex: 1, paddingVertical: 10, borderRadius: 9, alignItems: 'center' },
   modeBtnActive: { backgroundColor: COLORS.mocha },
+  modeBtnDisabled: { opacity: 0.45 },
   modeText: { color: '#888', fontSize: 13, fontWeight: '500' },
   modeTextActive: { color: COLORS.white },
   input: {

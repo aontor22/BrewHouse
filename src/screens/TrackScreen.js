@@ -5,7 +5,7 @@ import { useAuth } from '../data/AuthContext';
 import { getStatusStep, subscribeToCustomerOrders } from '../services/orderService';
 
 const STEPS = ['Placed', 'Confirmed', 'Brewing', 'Ready'];
-const ACTIVE = ['placed', 'confirmed', 'brewing', 'ready'];
+const ACTIVE = ['pending', 'confirmed', 'brewing', 'ready'];
 
 function formatItems(order) {
   return (order.items || []).map(item => `${item.qty || 1}× ${item.name}`).join(' · ');

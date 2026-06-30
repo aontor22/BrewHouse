@@ -4,7 +4,7 @@ import { COLORS } from '../data/constants';
 import { ORDER_STATUSES, subscribeToAllOrders, updateOrderStatus } from '../services/orderService';
 
 const NEXT_LABEL = {
-  placed: 'Confirm',
+  pending: 'Confirm',
   confirmed: 'Start brewing',
   brewing: 'Mark ready',
   ready: 'Complete',
@@ -13,7 +13,7 @@ const NEXT_LABEL = {
 
 function nextStatus(current) {
   const index = ORDER_STATUSES.indexOf(current);
-  return ORDER_STATUSES[Math.min(index + 1, ORDER_STATUSES.length - 1)] || 'confirmed';
+  return ORDER_STATUSES[Math.min(Math.max(index, 0) + 1, ORDER_STATUSES.length - 1)] || 'confirmed';
 }
 
 export default function AdminOrdersScreen() {

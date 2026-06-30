@@ -39,7 +39,17 @@ export function AuthProvider({ children }) {
 
   const fetchProfile = async (userId) => {
     if (!supabase) return;
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+    const { data: { user } = {} } = await supabase.auth.getUser();
+    const fallbackName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Customer';
+    let { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+    if (!data) {
+      const { data: inserted } = await supabase
+        .from('profiles')
+        .upsert({ id: userId, full_name: fallbackName, phone: user?.phone || null, role: 'customer' }, { onConflict: 'id' })
+        .select('*')
+        .maybeSingle();
+      data = inserted || null;
+    }
     setProfile(data || null);
   };
 

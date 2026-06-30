@@ -5,7 +5,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
-import { StripeProvider } from '@stripe/stripe-react-native';
 
 import MenuScreen from './src/screens/MenuScreen';
 import CartScreen from './src/screens/CartScreen';
@@ -41,6 +40,8 @@ function MenuStackScreen() {
 
 function AppNavigator() {
   const { totalItems } = useCart();
+  const { profile } = useAuth();
+  const isStaff = ['staff', 'admin'].includes(profile?.role);
   return (
     <Tab.Navigator
       screenOptions={{
@@ -68,7 +69,9 @@ function AppNavigator() {
       <Tab.Screen name="Track" component={TrackScreen} options={{ tabBarIcon: ({ color }) => <TabText color={color}>🕐</TabText> }} />
       <Tab.Screen name="Rewards" component={LoyaltyScreen} options={{ tabBarIcon: ({ color }) => <TabText color={color}>⭐</TabText> }} />
       <Tab.Screen name="Saved" component={FavouritesScreen} options={{ tabBarIcon: ({ color }) => <TabText color={color}>❤️</TabText> }} />
-      <Tab.Screen name="Admin" component={AdminOrdersScreen} options={{ tabBarIcon: ({ color }) => <TabText color={color}>🧾</TabText> }} />
+      {isStaff && (
+        <Tab.Screen name="Admin" component={AdminOrdersScreen} options={{ tabBarIcon: ({ color }) => <TabText color={color}>🧾</TabText> }} />
+      )}
     </Tab.Navigator>
   );
 }
@@ -92,19 +95,16 @@ function AppGate() {
 }
 
 export default function App() {
-  const stripeKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder';
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <StripeProvider publishableKey={stripeKey} merchantIdentifier={process.env.EXPO_PUBLIC_STRIPE_MERCHANT_ID || undefined}>
-        <AuthProvider>
-          <CartProvider>
-            <NavigationContainer>
-              <StatusBar style="light" />
-              <AppGate />
-            </NavigationContainer>
-          </CartProvider>
-        </AuthProvider>
-      </StripeProvider>
+      <AuthProvider>
+        <CartProvider>
+          <NavigationContainer>
+            <StatusBar style="light" />
+            <AppGate />
+          </NavigationContainer>
+        </CartProvider>
+      </AuthProvider>
     </GestureHandlerRootView>
   );
 }

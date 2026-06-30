@@ -3,7 +3,7 @@ import { db, firestore, isFirebaseConfigured } from './firebase';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const LOCAL_ORDERS_KEY = 'brewhouse.orders';
-const STATUS_FLOW = ['placed', 'confirmed', 'brewing', 'ready', 'completed'];
+const STATUS_FLOW = ['pending', 'confirmed', 'brewing', 'ready', 'completed'];
 
 function createReadableId() {
   return `#${Math.floor(1000 + Math.random() * 9000)}`;
@@ -13,7 +13,7 @@ function normalizeSupabaseOrder(order) {
   const orderItems = order.order_items || [];
   return {
     id: order.id,
-    readableId: order.order_number ? `#${order.order_number}` : `#${String(order.id).slice(0, 4)}`,
+    readableId: order.order_number ? String(order.order_number) : `#${String(order.id).slice(0, 4)}`,
     customerId: order.user_id,
     items: orderItems.map(item => ({
       id: item.menu_item_id || item.id,
@@ -25,10 +25,10 @@ function normalizeSupabaseOrder(order) {
     subtotal: Number(order.subtotal || 0),
     tax: Number(order.tax || 0),
     total: Number(order.total || 0),
-    paymentMethod: order.payment_method || 'pay_at_counter',
-    paymentStatus: order.payment_status || 'pending',
-    status: order.status || 'placed',
-    type: order.type || 'pickup',
+    paymentMethod: 'pay_at_counter',
+    paymentStatus: order.payment_status || 'unpaid',
+    status: order.status || 'pending',
+    type: 'pickup',
     createdAt: order.created_at,
     updatedAt: order.updated_at,
   };
@@ -51,10 +51,8 @@ export async function placeOrder({ items, subtotal, customerId = 'guest', paymen
         subtotal: Number(subtotal.toFixed(2)),
         tax,
         total,
-        payment_method: paymentMethod,
-        payment_status: paymentMethod === 'pay_at_counter' ? 'pending' : 'paid',
-        status: 'placed',
-        type: 'pickup',
+        payment_status: paymentMethod === 'pay_at_counter' ? 'unpaid' : 'paid',
+        status: 'pending',
       })
       .select()
       .single();
@@ -87,8 +85,8 @@ export async function placeOrder({ items, subtotal, customerId = 'guest', paymen
     tax,
     total,
     paymentMethod,
-    paymentStatus: paymentMethod === 'pay_at_counter' ? 'pending' : 'paid',
-    status: 'placed',
+    paymentStatus: paymentMethod === 'pay_at_counter' ? 'unpaid' : 'paid',
+    status: 'pending',
     type: 'pickup',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
