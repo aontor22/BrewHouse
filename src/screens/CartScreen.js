@@ -13,12 +13,13 @@ export default function CartScreen({ navigation }) {
   const { user } = useAuth();
   const [ordered, setOrdered] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('cash');
 
   const handleOrder = async () => {
     if (submitting) return;
     try {
       setSubmitting(true);
-      await placeOrder({ items: cartItems, subtotal: totalPrice, customerId: user?.id || user?.uid || 'guest' });
+      await placeOrder({ items: cartItems, subtotal: totalPrice, customerId: user?.id || user?.uid || 'guest', paymentMethod });
       setOrdered(true);
       clearCart();
       setTimeout(() => navigation.navigate('Track'), 1200);
@@ -98,6 +99,30 @@ export default function CartScreen({ navigation }) {
           </View>
         </View>
 
+
+        <View style={styles.paymentCard}>
+          <Text style={styles.sectionTitle}>Payment method</Text>
+          <View style={styles.paymentGrid}>
+            {[
+              ['cash', 'Cash'],
+              ['bkash', 'bKash'],
+              ['nagad', 'Nagad'],
+              ['rocket', 'Rocket'],
+              ['upay', 'Upay'],
+              ['bank', 'Bank'],
+            ].map(([value, label]) => (
+              <TouchableOpacity
+                key={value}
+                style={[styles.paymentChip, paymentMethod === value && styles.paymentChipActive]}
+                onPress={() => setPaymentMethod(value)}
+              >
+                <Text style={[styles.paymentChipText, paymentMethod === value && styles.paymentChipTextActive]}>{label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.paymentNote}>Payment will be collected manually at pickup/counter.</Text>
+        </View>
+
         <View style={styles.noteCard}>
           <Text style={styles.noteTitle}>📍 Pick up at counter</Text>
           <Text style={styles.noteText}>Ready in approx. 5–8 minutes after placing your order.</Text>
@@ -138,6 +163,13 @@ const styles = StyleSheet.create({
   totalRow: { borderTopWidth: 0.5, borderColor: COLORS.lightBorder, paddingTop: 12, marginTop: 4 },
   totalLabel: { fontSize: 15, fontWeight: '500', color: COLORS.espresso },
   totalValue: { fontSize: 15, fontWeight: '500', color: COLORS.mocha },
+  paymentCard: { backgroundColor: COLORS.white, marginHorizontal: 16, borderRadius: 12, borderWidth: 0.5, borderColor: COLORS.lightBorder, marginBottom: 10, paddingBottom: 12 },
+  paymentGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16 },
+  paymentChip: { borderWidth: 1, borderColor: COLORS.lightBorder, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: COLORS.foam },
+  paymentChipActive: { backgroundColor: COLORS.mocha, borderColor: COLORS.mocha },
+  paymentChipText: { color: COLORS.espresso, fontSize: 12, fontWeight: '600' },
+  paymentChipTextActive: { color: COLORS.white },
+  paymentNote: { color: COLORS.muted, fontSize: 11, marginTop: 10, paddingHorizontal: 16 },
   noteCard: { backgroundColor: '#FEF3C7', marginHorizontal: 16, borderRadius: 12, padding: 14 },
   noteTitle: { fontSize: 13, fontWeight: '500', color: '#92400E', marginBottom: 4 },
   noteText: { fontSize: 12, color: '#92400E' },

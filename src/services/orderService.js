@@ -9,6 +9,10 @@ function createReadableId() {
   return `#${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ''));
+}
+
 function normalizeSupabaseOrder(order) {
   const orderItems = order.order_items || [];
   return {
@@ -25,7 +29,7 @@ function normalizeSupabaseOrder(order) {
     subtotal: Number(order.subtotal || 0),
     tax: Number(order.tax || 0),
     total: Number(order.total || 0),
-    paymentMethod: 'pay_at_counter',
+    paymentMethod: order.payment_method || (order.notes || '').replace('Payment method: ', '') || 'cash',
     paymentStatus: order.payment_status || 'unpaid',
     status: order.status || 'pending',
     type: 'pickup',
@@ -51,8 +55,9 @@ export async function placeOrder({ items, subtotal, customerId = 'guest', paymen
         subtotal: Number(subtotal.toFixed(2)),
         tax,
         total,
-        payment_status: paymentMethod === 'pay_at_counter' ? 'unpaid' : 'paid',
+        payment_status: 'unpaid',
         status: 'pending',
+        notes: `Payment method: ${paymentMethod}`,
       })
       .select()
       .single();
@@ -61,7 +66,7 @@ export async function placeOrder({ items, subtotal, customerId = 'guest', paymen
 
     const payload = items.map(item => ({
       order_id: order.id,
-      menu_item_id: item.id,
+      menu_item_id: isUuid(item.id) ? item.id : null,
       name: item.name,
       price: item.price,
       quantity: item.qty,
@@ -85,7 +90,7 @@ export async function placeOrder({ items, subtotal, customerId = 'guest', paymen
     tax,
     total,
     paymentMethod,
-    paymentStatus: paymentMethod === 'pay_at_counter' ? 'unpaid' : 'paid',
+    paymentStatus: 'unpaid',
     status: 'pending',
     type: 'pickup',
     createdAt: new Date().toISOString(),

@@ -11,9 +11,7 @@ import CartScreen from './src/screens/CartScreen';
 import TrackScreen from './src/screens/TrackScreen';
 import LoyaltyScreen from './src/screens/LoyaltyScreen';
 import FavouritesScreen from './src/screens/FavouritesScreen';
-import AdminOrdersScreen from './src/screens/AdminOrdersScreen';
 import LoginScreen from './src/screens/LoginScreen';
-import PaymentScreen from './src/screens/PaymentScreen';
 import { CartProvider, useCart } from './src/data/CartContext';
 import { AuthProvider, useAuth } from './src/lib/AuthContext';
 
@@ -33,15 +31,12 @@ function MenuStackScreen() {
     <MenuStack.Navigator screenOptions={{ headerShown: false }}>
       <MenuStack.Screen name="MenuMain" component={MenuScreen} />
       <MenuStack.Screen name="Cart" component={CartScreen} />
-      <MenuStack.Screen name="Payment" component={PaymentScreen} />
     </MenuStack.Navigator>
   );
 }
 
 function AppNavigator() {
   const { totalItems } = useCart();
-  const { profile } = useAuth();
-  const isStaff = ['staff', 'admin'].includes(profile?.role);
   return (
     <Tab.Navigator
       screenOptions={{
@@ -69,9 +64,6 @@ function AppNavigator() {
       <Tab.Screen name="Track" component={TrackScreen} options={{ tabBarIcon: ({ color }) => <TabText color={color}>🕐</TabText> }} />
       <Tab.Screen name="Rewards" component={LoyaltyScreen} options={{ tabBarIcon: ({ color }) => <TabText color={color}>⭐</TabText> }} />
       <Tab.Screen name="Saved" component={FavouritesScreen} options={{ tabBarIcon: ({ color }) => <TabText color={color}>❤️</TabText> }} />
-      {isStaff && (
-        <Tab.Screen name="Admin" component={AdminOrdersScreen} options={{ tabBarIcon: ({ color }) => <TabText color={color}>🧾</TabText> }} />
-      )}
     </Tab.Navigator>
   );
 }
