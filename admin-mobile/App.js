@@ -14,9 +14,18 @@ function AdminGate() {
     return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.foam }}><ActivityIndicator color={COLORS.mocha} /><Text style={{ marginTop: 10, color: COLORS.mocha }}>Loading admin…</Text></View>;
   }
   if (authReady && !isSignedIn) return <LoginScreen />;
-  // Admin APK is a separate app, so do not block the screen with a client-side role gate.
-  // Real protection still stays in Supabase RLS policies. Set the staff/admin role in Supabase
-  // for full order update permission.
+  if (!['staff', 'admin'].includes(profile?.role)) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.foam, padding: 24 }}>
+        <Text style={{ fontSize: 42 }}>🔒</Text>
+        <Text style={{ fontSize: 20, fontWeight: '700', color: COLORS.espresso, marginTop: 12 }}>Admin access required</Text>
+        <Text style={{ textAlign: 'center', color: COLORS.mocha, marginTop: 8 }}>Set this account role to staff/admin in Supabase profiles table.</Text>
+        <TouchableOpacity onPress={signOut} style={{ marginTop: 20, backgroundColor: COLORS.mocha, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12 }}>
+          <Text style={{ color: 'white', fontWeight: '700' }}>Log out</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
   return <AdminOrdersScreen />;
 }
 

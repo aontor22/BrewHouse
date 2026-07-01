@@ -1,5 +1,8 @@
+// menuService.js
+// Fetches menu items from Supabase, falls back to local constants.
+// No Firebase, no Stripe.
+
 import { MENU_ITEMS } from '../data/constants';
-import { db, firestore, isFirebaseConfigured } from './firebase';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 function normalizeSupabaseMenuItem(item) {
@@ -29,17 +32,6 @@ export async function getMenuItems() {
       return data.map(normalizeSupabaseMenuItem);
     }
   }
-
-  if (isFirebaseConfigured && db) {
-    const ref = firestore.collection(db, 'menuItems');
-    const snapshot = await firestore.getDocs(ref);
-    if (!snapshot.empty) {
-      return snapshot.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(item => item.isAvailable !== false)
-        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-    }
-  }
-
+  // Fallback to bundled menu if Supabase not configured or empty
   return MENU_ITEMS;
 }

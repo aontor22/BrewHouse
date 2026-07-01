@@ -8,40 +8,57 @@ import { useCart } from '../data/CartContext';
 import { useAuth } from '../data/AuthContext';
 import { placeOrder } from '../services/orderService';
 
+const PAYMENT_METHODS = [
+  { value: 'cash', label: 'Cash', icon: '💵' },
+  { value: 'bkash', label: 'bKash', icon: '🩷' },
+  { value: 'nagad', label: 'Nagad', icon: '🟠' },
+  { value: 'rocket', label: 'Rocket', icon: '🚀' },
+  { value: 'upay', label: 'Upay', icon: '🔵' },
+  { value: 'bank', label: 'Bank Transfer', icon: '🏦' },
+];
+
 export default function CartScreen({ navigation }) {
-  const { cartItems, addItem, removeItem, clearCart, totalItems, totalPrice } = useCart();
+  const { cartItems, addItem, removeItem, clearCart, totalPrice } = useCart();
   const { user } = useAuth();
   const [ordered, setOrdered] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('cash');
 
+  const tax = totalPrice * 0.08;
+  const total = totalPrice + tax;
+
   const handleOrder = async () => {
     if (submitting) return;
     try {
       setSubmitting(true);
-      await placeOrder({ items: cartItems, subtotal: totalPrice, customerId: user?.id || user?.uid || 'guest', paymentMethod });
+      await placeOrder({
+        items: cartItems,
+        subtotal: totalPrice,
+        customerId: user?.id || user?.uid || 'guest',
+        paymentMethod,
+      });
       setOrdered(true);
       clearCart();
-      setTimeout(() => navigation.navigate('Track'), 1200);
+      setTimeout(() => navigation.navigate('Track'), 1500);
     } catch (error) {
-      Alert.alert('Order failed', 'Please check your connection and try again.');
+      Alert.alert('Order failed', error.message || 'Please check your connection and try again.');
       setSubmitting(false);
     }
   };
 
   if (ordered) {
     return (
-      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
+      <SafeAreaView style={[styles.safe, styles.center]}>
         <Text style={{ fontSize: 60 }}>☕</Text>
         <Text style={styles.successTitle}>Order placed!</Text>
-        <Text style={styles.successSub}>Taking you to order tracking…</Text>
+        <Text style={styles.successSub}>Redirecting to order tracking…</Text>
       </SafeAreaView>
     );
   }
 
   if (cartItems.length === 0) {
     return (
-      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
+      <SafeAreaView style={[styles.safe, styles.center]}>
         <Text style={{ fontSize: 50 }}>🛒</Text>
         <Text style={styles.emptyTitle}>Your cart is empty</Text>
         <TouchableOpacity style={styles.browseBtn} onPress={() => navigation.goBack()}>
@@ -61,9 +78,9 @@ export default function CartScreen({ navigation }) {
         <View style={{ width: 60 }} />
       </View>
 
-      <ScrollView style={{ flex: 1 }}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Items */}
         <Text style={styles.sectionTitle}>Items</Text>
-
         {cartItems.map(item => (
           <View key={item.id} style={styles.cartItem}>
             <Text style={styles.itemEmoji}>{item.emoji}</Text>
@@ -83,6 +100,7 @@ export default function CartScreen({ navigation }) {
           </View>
         ))}
 
+        {/* Summary */}
         <View style={styles.summaryCard}>
           <Text style={styles.sectionTitle}>Summary</Text>
           <View style={styles.summaryRow}>
@@ -91,38 +109,39 @@ export default function CartScreen({ navigation }) {
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Tax (8%)</Text>
-            <Text style={styles.summaryValue}>${(totalPrice * 0.08).toFixed(2)}</Text>
+            <Text style={styles.summaryValue}>${tax.toFixed(2)}</Text>
           </View>
           <View style={[styles.summaryRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>${(totalPrice * 1.08).toFixed(2)}</Text>
+            <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
           </View>
         </View>
 
-
+        {/* Payment method */}
         <View style={styles.paymentCard}>
           <Text style={styles.sectionTitle}>Payment method</Text>
           <View style={styles.paymentGrid}>
-            {[
-              ['cash', 'Cash'],
-              ['bkash', 'bKash'],
-              ['nagad', 'Nagad'],
-              ['rocket', 'Rocket'],
-              ['upay', 'Upay'],
-              ['bank', 'Bank'],
-            ].map(([value, label]) => (
+            {PAYMENT_METHODS.map(({ value, label, icon }) => (
               <TouchableOpacity
                 key={value}
                 style={[styles.paymentChip, paymentMethod === value && styles.paymentChipActive]}
                 onPress={() => setPaymentMethod(value)}
               >
-                <Text style={[styles.paymentChipText, paymentMethod === value && styles.paymentChipTextActive]}>{label}</Text>
+                <Text style={styles.paymentChipIcon}>{icon}</Text>
+                <Text style={[styles.paymentChipText, paymentMethod === value && styles.paymentChipTextActive]}>
+                  {label}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
-          <Text style={styles.paymentNote}>Payment will be collected manually at pickup/counter.</Text>
+          <Text style={styles.paymentNote}>
+            {paymentMethod === 'cash'
+              ? 'Pay at the counter when your order is ready.'
+              : `Show your ${PAYMENT_METHODS.find(m => m.value === paymentMethod)?.label} receipt to the staff when picking up.`}
+          </Text>
         </View>
 
+        {/* Pickup note */}
         <View style={styles.noteCard}>
           <Text style={styles.noteTitle}>📍 Pick up at counter</Text>
           <Text style={styles.noteText}>Ready in approx. 5–8 minutes after placing your order.</Text>
@@ -132,8 +151,10 @@ export default function CartScreen({ navigation }) {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.orderBtn} onPress={handleOrder}>
-          <Text style={styles.orderBtnText}>{submitting ? 'Placing order…' : `Place order · $${(totalPrice * 1.08).toFixed(2)}`}</Text>
+        <TouchableOpacity style={styles.orderBtn} onPress={handleOrder} disabled={submitting}>
+          <Text style={styles.orderBtnText}>
+            {submitting ? 'Placing order…' : `Place order · $${total.toFixed(2)}`}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -142,6 +163,7 @@ export default function CartScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.foam },
+  center: { justifyContent: 'center', alignItems: 'center' },
   header: { backgroundColor: COLORS.espresso, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
   backBtn: { width: 60 },
   backText: { color: COLORS.latte, fontSize: 14 },
@@ -163,13 +185,14 @@ const styles = StyleSheet.create({
   totalRow: { borderTopWidth: 0.5, borderColor: COLORS.lightBorder, paddingTop: 12, marginTop: 4 },
   totalLabel: { fontSize: 15, fontWeight: '500', color: COLORS.espresso },
   totalValue: { fontSize: 15, fontWeight: '500', color: COLORS.mocha },
-  paymentCard: { backgroundColor: COLORS.white, marginHorizontal: 16, borderRadius: 12, borderWidth: 0.5, borderColor: COLORS.lightBorder, marginBottom: 10, paddingBottom: 12 },
+  paymentCard: { backgroundColor: COLORS.white, marginHorizontal: 16, borderRadius: 12, borderWidth: 0.5, borderColor: COLORS.lightBorder, marginBottom: 10, paddingBottom: 14 },
   paymentGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16 },
-  paymentChip: { borderWidth: 1, borderColor: COLORS.lightBorder, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: COLORS.foam },
+  paymentChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: COLORS.lightBorder, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: COLORS.foam },
   paymentChipActive: { backgroundColor: COLORS.mocha, borderColor: COLORS.mocha },
+  paymentChipIcon: { fontSize: 14 },
   paymentChipText: { color: COLORS.espresso, fontSize: 12, fontWeight: '600' },
   paymentChipTextActive: { color: COLORS.white },
-  paymentNote: { color: COLORS.muted, fontSize: 11, marginTop: 10, paddingHorizontal: 16 },
+  paymentNote: { color: COLORS.muted, fontSize: 11, marginTop: 10, paddingHorizontal: 16, lineHeight: 16 },
   noteCard: { backgroundColor: '#FEF3C7', marginHorizontal: 16, borderRadius: 12, padding: 14 },
   noteTitle: { fontSize: 13, fontWeight: '500', color: '#92400E', marginBottom: 4 },
   noteText: { fontSize: 12, color: '#92400E' },

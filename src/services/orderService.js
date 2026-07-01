@@ -1,16 +1,25 @@
+// orderService.js
+// Supabase-first order management. Falls back to local AsyncStorage
+// if Supabase is not yet configured (useful for offline testing).
+// No Firebase, no Stripe.
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { db, firestore, isFirebaseConfigured } from './firebase';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const LOCAL_ORDERS_KEY = 'brewhouse.orders';
-const STATUS_FLOW = ['pending', 'confirmed', 'brewing', 'ready', 'completed'];
+
+// Status flow used by BOTH customer app and admin app
+// pending → accepted → preparing → ready → completed
+export const ORDER_STATUSES = ['pending', 'accepted', 'preparing', 'ready', 'completed'];
 
 function createReadableId() {
   return `#${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
 function isUuid(value) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ''));
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    String(value || '')
+  );
 }
 
 function normalizeSupabaseOrder(order) {
@@ -29,24 +38,27 @@ function normalizeSupabaseOrder(order) {
     subtotal: Number(order.subtotal || 0),
     tax: Number(order.tax || 0),
     total: Number(order.total || 0),
-    paymentMethod: order.payment_method || (order.notes || '').replace('Payment method: ', '') || 'cash',
+    paymentMethod: order.notes
+      ? String(order.notes).replace('Payment method: ', '')
+      : 'cash',
     paymentStatus: order.payment_status || 'unpaid',
     status: order.status || 'pending',
-    type: 'pickup',
     createdAt: order.created_at,
     updatedAt: order.updated_at,
   };
 }
 
 export function getStatusStep(status) {
-  return Math.max(0, STATUS_FLOW.indexOf(status));
+  return Math.max(0, ORDER_STATUSES.indexOf(status));
 }
 
-export async function placeOrder({ items, subtotal, customerId = 'guest', paymentMethod = 'pay_at_counter' }) {
+// ─── Place a new order ────────────────────────────────────────────────────────
+export async function placeOrder({ items, subtotal, customerId = 'guest', paymentMethod = 'cash' }) {
   const taxRate = Number(process.env.EXPO_PUBLIC_TAX_RATE || 0.08);
   const tax = Number((subtotal * taxRate).toFixed(2));
   const total = Number((subtotal + tax).toFixed(2));
 
+  // Supabase path
   if (isSupabaseConfigured && supabase && customerId !== 'guest') {
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -71,12 +83,16 @@ export async function placeOrder({ items, subtotal, customerId = 'guest', paymen
       price: item.price,
       quantity: item.qty,
     }));
+
     const { error: itemsError } = await supabase.from('order_items').insert(payload);
     if (itemsError) throw itemsError;
+
     return normalizeSupabaseOrder({ ...order, order_items: payload });
   }
 
+  // Local fallback (no Supabase configured or guest user)
   const order = {
+    id: `local-${Date.now()}`,
     readableId: createReadableId(),
     customerId,
     items: items.map(item => ({
@@ -92,30 +108,21 @@ export async function placeOrder({ items, subtotal, customerId = 'guest', paymen
     paymentMethod,
     paymentStatus: 'unpaid',
     status: 'pending',
-    type: 'pickup',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
 
-  if (isFirebaseConfigured && db) {
-    const docRef = await firestore.addDoc(firestore.collection(db, 'orders'), {
-      ...order,
-      createdAt: firestore.serverTimestamp(),
-      updatedAt: firestore.serverTimestamp(),
-    });
-    return { id: docRef.id, ...order };
-  }
-
   const existing = JSON.parse(await AsyncStorage.getItem(LOCAL_ORDERS_KEY) || '[]');
-  const localOrder = { id: `local-${Date.now()}`, ...order };
-  await AsyncStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify([localOrder, ...existing]));
-  return localOrder;
+  await AsyncStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify([order, ...existing]));
+  return order;
 }
 
+// ─── Fetch local orders ────────────────────────────────────────────────────────
 export async function getLocalOrders() {
   return JSON.parse(await AsyncStorage.getItem(LOCAL_ORDERS_KEY) || '[]');
 }
 
+// ─── Subscribe to a customer's orders (realtime) ─────────────────────────────
 export function subscribeToCustomerOrders(customerId, callback) {
   if (isSupabaseConfigured && supabase && customerId && customerId !== 'guest') {
     const fetchOrders = async () => {
@@ -126,28 +133,28 @@ export function subscribeToCustomerOrders(customerId, callback) {
         .order('created_at', { ascending: false });
       if (!error) callback((data || []).map(normalizeSupabaseOrder));
     };
+
     fetchOrders();
+
     const channel = supabase
       .channel(`customer-orders-${customerId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${customerId}` }, fetchOrders)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${customerId}` },
+        fetchOrders
+      )
       .subscribe();
+
     return () => supabase.removeChannel(channel);
   }
 
-  if (isFirebaseConfigured && db) {
-    const q = firestore.query(
-      firestore.collection(db, 'orders'),
-      firestore.where('customerId', '==', customerId || 'guest'),
-      firestore.orderBy('createdAt', 'desc')
-    );
-    return firestore.onSnapshot(q, snapshot => callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))));
-  }
-
+  // Local fallback
   let active = true;
   getLocalOrders().then(orders => active && callback(orders));
   return () => { active = false; };
 }
 
+// ─── Subscribe to ALL orders (admin) ─────────────────────────────────────────
 export function subscribeToAllOrders(callback) {
   if (isSupabaseConfigured && supabase) {
     const fetchOrders = async () => {
@@ -157,37 +164,52 @@ export function subscribeToAllOrders(callback) {
         .order('created_at', { ascending: false });
       if (!error) callback((data || []).map(normalizeSupabaseOrder));
     };
+
     fetchOrders();
+
     const channel = supabase
-      .channel('all-orders')
+      .channel('admin-all-orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchOrders)
       .subscribe();
+
     return () => supabase.removeChannel(channel);
   }
 
-  if (isFirebaseConfigured && db) {
-    const q = firestore.query(firestore.collection(db, 'orders'), firestore.orderBy('createdAt', 'desc'));
-    return firestore.onSnapshot(q, snapshot => callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() }))));
-  }
-
+  // Local fallback
   let active = true;
   getLocalOrders().then(orders => active && callback(orders));
   return () => { active = false; };
 }
 
+// ─── Update order status (admin) ──────────────────────────────────────────────
 export async function updateOrderStatus(orderId, status) {
   if (isSupabaseConfigured && supabase && !String(orderId).startsWith('local-')) {
     const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
     if (error) throw error;
     return;
   }
-  if (isFirebaseConfigured && db && !String(orderId).startsWith('local-')) {
-    await firestore.updateDoc(firestore.doc(db, 'orders', orderId), { status, updatedAt: firestore.serverTimestamp() });
-    return;
-  }
+  // Local fallback
   const orders = await getLocalOrders();
-  const updated = orders.map(order => order.id === orderId ? { ...order, status, updatedAt: new Date().toISOString() } : order);
+  const updated = orders.map(o =>
+    o.id === orderId ? { ...o, status, updatedAt: new Date().toISOString() } : o
+  );
   await AsyncStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(updated));
 }
 
-export const ORDER_STATUSES = STATUS_FLOW;
+// ─── Mark payment as paid manually (admin) ────────────────────────────────────
+export async function markPaymentPaid(orderId) {
+  if (isSupabaseConfigured && supabase && !String(orderId).startsWith('local-')) {
+    const { error } = await supabase
+      .from('orders')
+      .update({ payment_status: 'paid' })
+      .eq('id', orderId);
+    if (error) throw error;
+    return;
+  }
+  // Local fallback
+  const orders = await getLocalOrders();
+  const updated = orders.map(o =>
+    o.id === orderId ? { ...o, paymentStatus: 'paid', updatedAt: new Date().toISOString() } : o
+  );
+  await AsyncStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(updated));
+}

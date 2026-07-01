@@ -5,10 +5,7 @@
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
-    "ios": "expo run:ios",
-    "build:android": "eas build --platform android --profile preview",
-    "preflight": "node scripts/preflight.js",
-    "seed:menu": "node scripts/seed-menu.js"
+    "build:android": "eas build --platform android --profile preview"
   },
   "dependencies": {
     "expo": "~50.0.0",
@@ -22,12 +19,8 @@
     "react-native-screens": "~3.29.0",
     "@expo/vector-icons": "^14.0.0",
     "react-native-gesture-handler": "~2.14.0",
-    "expo-linear-gradient": "~12.7.2",
     "react-native-reanimated": "~3.6.2",
-    "firebase": "^10.14.1",
     "@react-native-async-storage/async-storage": "1.21.0",
-    "expo-notifications": "~0.27.6",
-    "expo-device": "~5.9.4",
     "@supabase/supabase-js": "2.45.4",
     "expo-auth-session": "~5.4.0",
     "expo-web-browser": "~12.8.2",

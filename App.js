@@ -22,7 +22,6 @@ const COLORS = {
   espresso: '#1A0A00',
   mocha: '#6B3A1F',
   latte: '#C49A6C',
-  cream: '#F5EDD8',
   foam: '#FFF8EE',
 };
 
@@ -33,6 +32,10 @@ function MenuStackScreen() {
       <MenuStack.Screen name="Cart" component={CartScreen} />
     </MenuStack.Navigator>
   );
+}
+
+function TabText({ color, children }) {
+  return <Text style={{ fontSize: 20, color }}>{children}</Text>;
 }
 
 function AppNavigator() {
@@ -66,10 +69,6 @@ function AppNavigator() {
       <Tab.Screen name="Saved" component={FavouritesScreen} options={{ tabBarIcon: ({ color }) => <TabText color={color}>❤️</TabText> }} />
     </Tab.Navigator>
   );
-}
-
-function TabText({ color, children }) {
-  return <Text style={{ fontSize: 20, color }}>{children}</Text>;
 }
 
 function AppGate() {
